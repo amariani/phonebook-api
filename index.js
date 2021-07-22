@@ -1,8 +1,16 @@
 const express = require("express");
+const morgan = require("morgan");
 const app = express();
 const PORT = 3001;
 
+morgan.token("body", (req, res) => JSON.stringify(req.body));
+morgan.format(
+  "tinyWithBody",
+  ":method :url :status :res[content-length] - :response-time ms Body: :body"
+);
+
 app.use(express.json());
+app.use(morgan("tinyWithBody"));
 
 let persons = [
   {

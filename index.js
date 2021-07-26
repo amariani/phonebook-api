@@ -16,10 +16,14 @@ app.use(express.static("build"));
 app.use(express.json());
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message);
+  console.error("===========================================");
+  console.error("Error:", JSON.stringify(error.message));
+  console.error("===========================================");
 
   if (error.name === "CastError") {
-    return response.status(400).send({ error: "Malformatted id" });
+    return response.status(400).send({ error: "malformatted id" });
+  } else if (error.name === "ValidationError") {
+    return response.status(400).send({ error: error.message });
   }
 
   next(error);
@@ -84,28 +88,30 @@ app.delete("/api/persons/:id", (req, res, next) => {
 });
 
 // Create person
-app.post("/api/persons", (req, res) => {
-  const { body } = req;
+app.post("/api/persons", (req, res, next) => {
+  const { name, number } = req.body;
 
-  if (!body.name) {
+  if (!name) {
     return res.status(400).json({
       error: getRequiredFieldMessage("name"),
     });
   }
-  if (!body.number) {
+  if (!number) {
     return res.status(400).json({
       error: getRequiredFieldMessage("number"),
     });
   }
 
   const contact = new Contact({
-    name: body.name,
-    number: body.number,
+    name,
+    number,
   });
 
-  contact.save().then((newContact) => {
-    res.json(newContact);
-  });
+  contact
+    .save()
+    .then((savedContact) => savedContact.toJSON())
+    .then((formatedContact) => res.json(formatedContact))
+    .catch((e) => next(e));
 });
 
 // Update person
